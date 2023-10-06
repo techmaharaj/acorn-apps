@@ -1,3 +1,7 @@
+services: mariadb: {
+  image: "ghcr.io/acorn-io/mariadb:v1.0.0"
+}
+
 containers: {
 	owncloud: {
 		image: "owncloud/server:10.13"
@@ -5,12 +9,12 @@ containers: {
 			OWNCLOUD_DOMAIN:          ""
 			OWNCLOUD_TRUSTED_DOMAINS: ""
 			OWNCLOUD_DB_TYPE:         "mysql"
-			OWNCLOUD_DB_NAME:         "owncloud"
-			OWNCLOUD_DB_USERNAME:     "owncloud"
-			OWNCLOUD_DB_PASSWORD:     "secret://owncloud-mariadb-password/token"
-			OWNCLOUD_DB_HOST:         "mariadb"
-			OWNCLOUD_ADMIN_USERNAME:  "owncloud"
-			OWNCLOUD_ADMIN_PASSWORD:  "secret://owncloud-admin-password/token"
+			OWNCLOUD_DB_NAME:         "@{services.mariadb.data.dbName}"
+			OWNCLOUD_DB_USERNAME:     "@{services.mariadb.secrets.user.username}"
+			OWNCLOUD_DB_PASSWORD:     "@{services.mariadb.secrets.user.password}"
+			OWNCLOUD_DB_HOST:         "@{services.mariadb.address}"
+			OWNCLOUD_ADMIN_USERNAME:  "@{services.mariadb.secrets.admin.username}"
+			OWNCLOUD_ADMIN_PASSWORD:  "@{services.mariadb.secrets.admin.password}"
 			OWNCLOUD_MYSQL_UTF8MB4:   "true"
 			OWNCLOUD_REDIS_ENABLED:   "true"
 			OWNCLOUD_REDIS_HOST:      "redis"
@@ -19,49 +23,8 @@ containers: {
 		ports: publish: "8080/http"
 
 	}
-	mariadb: {
-		image: "mariadb:10.11"
-		env: {
-			MYSQL_DATABASE:       "owncloud"
-			MYSQL_USER:           "owncloud"
-			MYSQL_ROOT_PASSWORD:  "secret://owncloud-mariadb-root-password/token"
-			MYSQL_PASSWORD:       "secret://owncloud-mariadb-password/token"
-			MARIADB_AUTO_UPGRADE: "1"
-		}
-		ports: "3306/tcp"
-		probes: [
-			{
-				type:                "liveness"
-				initialDelaySeconds: 10
-				exec: command: localData.probeExecCommand
-			},
-			{
-				type:                "readiness"
-				initialDelaySeconds: 5
-				exec: command: localData.probeExecCommand
-			},
-		]
-	}
-
 	redis: {
 		image: "redis:6"
 		ports: "6379/tcp"
 	}
 }
-
-secrets: {
-	"owncloud-password": type:              "token"
-	"owncloud-admin-password": type:        "token"
-	"owncloud-mariadb-password": type:      "token"
-	"owncloud-mariadb-root-password": type: "token"
-}
-
-localData: probeExecCommand: [
-	"bash",
-	"-ec",
-	"exec",
-	"mysqladmin",
-	"status",
-	"-uroot",
-	"-p\"${MARIADB_ROOT_PASSWORD}\"",
-]
