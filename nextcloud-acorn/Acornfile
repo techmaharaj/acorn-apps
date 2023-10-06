@@ -1,33 +1,18 @@
+services: mariadb: {
+  image: "ghcr.io/acorn-io/mariadb:v1.0.0"
+}
+
 containers: {
   nextcloud: {
     image: "nextcloud:apache"
     env: {
-      "MYSQL_HOST": "mysql"
-      "MYSQL_DATABASE": "nextcloud"
-      "MYSQL_USER": "nextcloud"
-      "MYSQL_PASSWORD": "secret://mysql-password/token"
+      "MARIADB_HOST": "@{services.mariadb.address}"
+      "MARIADB_DATABASE": "@{services.mariadb.data.dbName}"
+      "MARIADB_USER": "@{services.mariadb.secrets.user.username}"
+      "MARIADB_PASSWORD": "@{services.mariadb.secrets.user.password}"
       "PHP_UPLOAD_LIMIT": "1G"
     }
-    dependsOn: ["mysql"]
+    dependsOn: ["mariadb"]
     ports: publish: "80/http"
-  }
-  mysql: {
-    image: "mariadb:10.7"
-    env: {
-      "MYSQL_DATABASE": "nextcloud"
-      "MYSQL_USER": "nextcloud"
-      "MYSQL_ROOT_PASSWORD": "secret://mysql-root-password/token"
-      "MYSQL_PASSWORD": "secret://mysql-password/token"
-    }
-    ports: "3306/tcp"
-  }
-}
-
-secrets: {
-  "mysql-root-password": {
-    type: "token"
-  }
-  "mysql-password": {
-    type: "token"
   }
 }
