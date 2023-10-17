@@ -1,0 +1,26 @@
+services: postgres: {
+  image: "ghcr.io/acorn-io/postgres:v15.3-0"
+  serviceArgs: {
+    dbName: "mealie"
+    dbUser: "mealie"
+  }
+}
+
+containers: {
+  mealie: {
+    image: "hkotel/mealie:latest"
+    env: {
+      "PUID" :"1000"
+      "PGID" :"1000"
+      "TZ" :"America/Anchorage"
+      "DB_ENGINE" :"postgres"
+      "POSTGRES_USER" :"@{services.postgres.secrets.admin.username}"
+      "POSTGRES_PASSWORD" :"@{services.postgres.secrets.admin.password}"
+      "POSTGRES_SERVER" :"@{services.postgres.address}"
+      "POSTGRES_PORT" :"@{services.postgres.port.5432}"
+      "POSTGRES_DB" :"@{services.postgres.data.dbName}"
+    }
+    dependsOn: ["postgres"]
+    ports: publish: "80/http"
+  }
+}
